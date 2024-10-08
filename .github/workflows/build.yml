@@ -1,6 +1,4 @@
-# Sample repository at https://github.com/Novfensec/SAMPLE-KIVYMD-APP
-
-name: CI - Android
+name: Android App Build
 
 on:
   push:
@@ -14,135 +12,52 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      PYTHON_VERSION: 3.11.9
+      JAVA_VERSION: 11
+      ANDROID_SDK_VERSION: "commandlinetools-linux-9477386_latest.zip"
+      NDK_VERSION: "23.1.7779620"
+
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      # Used to cache dependencies with a timeout
-      - name: Get Date
-        id: get-date
-        run: |
-          echo "date=$(date -u '+%Y%m%d')" >> $GITHUB_ENV
-        shell: bash
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Cache Buildozer global directory
-        uses: actions/cache@v3
-        with:
-          path: .buildozer_global
-          key: buildozer-global-${{ hashFiles('buildozer.spec') }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install buildozer
 
-      - uses: actions/cache@v3
-        with:
-          path: .buildozer
-          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin' # You can use 'adopt' or 'zulu' if preferred
+        java-version: ${{ env.JAVA_VERSION }}
 
-      # Install dependencies
-      - name: Install dependencies
-        run: |
-          sudo apt update
-          sudo apt-get install -y \
-            build-essential \
-            git \
-            ffmpeg \
-            libsdl2-dev \
-            libsdl2-image-dev \
-            libsdl2-mixer-dev \
-            libsdl2-ttf-dev \
-            libportmidi-dev \
-            libswscale-dev \
-            libavformat-dev \
-            libavcodec-dev \
-            libunwind-dev \
-            zlib1g-dev
-          sudo apt-get install -y \
-            libsqlite3-dev \
-            sqlite3 \
-            bzip2 \
-            libbz2-dev \
-            zlib1g-dev \
-            openssl \
-            libgdbm-dev \
-            libgdbm-compat-dev \
-            liblzma-dev \
-            libreadline-dev \
-            uuid-dev \
-            libgstreamer1.0 \
-            gstreamer1.0-plugins-base \
-            gstreamer1.0-plugins-good
-          sudo apt-get install -y \
-            zip \
-            unzip \
-            autoconf \
-            libtool \
-            pkg-config \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libtinfo5 \
-            cmake \
-            libffi-dev \
-            libssl-dev \
-            automake
+    - name: Install Android SDK
+      run: |
+        sudo mkdir -p /usr/local/lib/android/sdk
+        cd /usr/local/lib/android/sdk
+        wget https://dl.google.com/android/repository/${{ env.ANDROID_SDK_VERSION }}
+        unzip ${{ env.ANDROID_SDK_VERSION }}
+        rm ${{ env.ANDROID_SDK_VERSION }}
+        yes | ./cmdline-tools/bin/sdkmanager --licenses
+        ./cmdline-tools/bin/sdkmanager --install "platform-tools" "platforms;android-30" "build-tools;30.0.3"
 
+    - name: Install NDK
+      run: |
+        /usr/local/lib/android/sdk/cmdline-tools/bin/sdkmanager --install "ndk;${{ env.NDK_VERSION }}"
 
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'              # Set Java version to 17
-          distribution: 'temurin'         # Specify the distribution
-          server-id: github               # Server ID for Maven Repository
-          server-username: ${{ github.actor }}  # Using GitHub Actor
-          server-password: ${{ secrets.GITHUB_TOKEN }} # Use the token stored in GitHub Secrets
-          overwrite-settings: true
-      
-      # # Set up Java 17 required by Gradle
-      # - name: Setup Java 17 required by Gradle
-      #   uses: actions/setup-java@v4
-      #   with:
-      #     distribution: 'temurin'  # or 'zulu', 'liberica', etc.
-      #     java-version: '17'
+    - name: Set environment variables
+      run: |
+        echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=/usr/local/lib/android/sdk/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
+        echo "PATH=$PATH:/usr/local/lib/android/sdk/platform-tools:/usr/local/lib/android/sdk/emulator" >> $GITHUB_ENV
 
-      - name: Set up Android NDK
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip
-          # Download NDK r21e (change the version if needed)
-          wget https://dl.google.com/android/repository/android-ndk-r21e-linux-x86_64.zip
-          unzip android-ndk-r21e-linux-x86_64.zip -d $HOME/ndk
-          echo "NDK_HOME=$HOME/ndk/android-ndk-r21e" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$HOME/ndk/android-ndk-r21e" >> $GITHUB_ENV
-          echo "PATH=$PATH:$HOME/ndk/android-ndk-r21e" >> $GITHUB_ENV
-          echo "LEGACY_NDK=$HOME/ndk/android-ndk-r21e" >> $GITHUB_ENV
-
-      # Set up Python
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11.9' #set your python version
-
-      # Install pip dependencies
-      - name: Install pip dependencies
-        run: |
-          pip install --upgrade pip
-          pip install buildozer cython==0.29.33
-
-
-      - name: Install Buildozer
-        run: |
-          sudo apt-get install -y python3-pip
-          pip3 install --upgrade buildozer
-      
-      # Build with Buildozer
-      - name: Build with Buildozer
-        id: buildozer
-        run: |
-          yes | buildozer -v android debug
-        # yes | buildozer -v android release
-        # run this for generating aab (Android App Bundle) [Required by google play]
-      
-      # Upload artifacts
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: package
-          path: |
-            bin/*.apk
-            bin/*.aab
+    - name: Build Android APK
+      run: |
+        buildozer android debug
