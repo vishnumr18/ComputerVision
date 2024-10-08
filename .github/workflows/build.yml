@@ -8,7 +8,29 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3  # Using the latest version
+      - uses: actions/checkout@v3  # Checkout the repository
+
+      # Set up Java and Android SDK
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '8'  # Use the required Java version
+
+      - name: Install Android SDK and NDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          # Install Android SDK command-line tools
+          wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip -O cmdline-tools.zip
+          mkdir -p $HOME/Android/Sdk/cmdline-tools
+          unzip cmdline-tools.zip -d $HOME/Android/Sdk/cmdline-tools
+          rm cmdline-tools.zip
+          # Set the environment variables
+          echo "export ANDROID_HOME=$HOME/Android/Sdk" >> $GITHUB_ENV
+          echo "export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
+          # Accept licenses and install platforms and build tools
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-30" "build-tools;30.0.3" "ndk;21.4.7075529"  # Specify required versions
 
       # Get Date and set environment variable
       - name: Get Date
@@ -16,13 +38,13 @@ jobs:
         run: echo "DATE=$(date -u '+%Y%m%d')" >> $GITHUB_ENV
 
       - name: Cache Buildozer global directory
-        uses: actions/cache@v3  # Using the latest version
+        uses: actions/cache@v3
         with:
           path: .buildozer_global
           key: buildozer-global-${{ hashFiles('buildozer.spec') }}
 
       - name: Cache Buildozer local directory
-        uses: actions/cache@v3  # Using the latest version
+        uses: actions/cache@v3
         with:
           path: .buildozer
           key: ${{ runner.os }}-${{ env.DATE }}-${{ hashFiles('buildozer.spec') }}
@@ -35,7 +57,7 @@ jobs:
           buildozer_version: master
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3  # Using the latest version
+        uses: actions/upload-artifact@v3
         with:
           name: package
           path: ${{ steps.buildozer.outputs.filename }}
