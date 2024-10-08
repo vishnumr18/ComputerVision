@@ -125,7 +125,7 @@ android.ndk_api = 21
 # android.accept_sdk_license = False
 
 # (str) Android entry point, default is ok for Kivy-based app
-#android.entrypoint = org.kivy.android.PythonActivity
+android.entrypoint = org.kivy.android.PythonActivity
 
 # (list) Pattern to whitelist for the whole project
 #android.whitelist =
@@ -150,7 +150,7 @@ android.ndk_api = 21
 #android.add_aars =
 
 # (list) Gradle dependencies to add
-#android.gradle_dependencies =
+android.gradle_dependencies = com.google.android.material:material:1.2.1
 
 # (bool) Enable AndroidX support. Enable when 'android.gradle_dependencies'
 # contains an 'androidx' package, or any package from Kotlin source.
