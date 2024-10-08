@@ -92,7 +92,15 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.8' #set your python version
+          
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 34  # Set your desired API level
+          ndk-version: 25.0.8775105  # Set NDK version to 25
 
+      - name: Build with Gradle
+        run: ./gradlew build  # Adjust this
       # Install pip dependencies
       - name: Install pip dependencies
         run: |
