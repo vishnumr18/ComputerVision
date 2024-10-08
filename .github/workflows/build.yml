@@ -82,12 +82,23 @@ jobs:
             libssl-dev \
             automake
 
-      # Set up Java 17 required by Gradle
-      - name: Setup Java 17 required by Gradle
-        uses: actions/setup-java@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'  # or 'zulu', 'liberica', etc.
-          java-version: '17'
+          java-version: '17'              # Set Java version to 17
+          distribution: 'temurin'         # Specify the distribution
+          server-id: github               # Server ID for Maven Repository
+          server-username: ${{ github.actor }}  # Using GitHub Actor
+          server-password: ${{ secrets.GITHUB_TOKEN }} # Use the token stored in GitHub Secrets
+          overwrite-settings: true
+      
+      # # Set up Java 17 required by Gradle
+      # - name: Setup Java 17 required by Gradle
+      #   uses: actions/setup-java@v4
+      #   with:
+      #     distribution: 'temurin'  # or 'zulu', 'liberica', etc.
+      #     java-version: '17'
 
       - name: Set up Android NDK
         run: |
@@ -113,6 +124,12 @@ jobs:
           pip install --upgrade pip
           pip install buildozer cython==0.29.33
 
+
+      - name: Install Buildozer
+        run: |
+          sudo apt-get install -y python3-pip
+          pip3 install --upgrade buildozer
+      
       # Build with Buildozer
       - name: Build with Buildozer
         id: buildozer
@@ -120,7 +137,7 @@ jobs:
           yes | buildozer -v android debug
         # yes | buildozer -v android release
         # run this for generating aab (Android App Bundle) [Required by google play]
-
+      
       # Upload artifacts
       - name: Upload artifact
         uses: actions/upload-artifact@v4
