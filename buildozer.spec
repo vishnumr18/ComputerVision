@@ -37,7 +37,7 @@ version = 0.1
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,opencv-python,numpy,mediapipe,scipy,ultralytics,pillow
+requirements = python3==3.11.9,kivy==2.3.0,opencv-python==4.10.0.84,numpy==1.26.4,mediapipe==0.10.15,scipy==1.14.1,ultralytics==8.3.7,pillow
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
