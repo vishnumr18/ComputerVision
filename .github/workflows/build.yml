@@ -1,37 +1,42 @@
-name: Build APK
-
+name: CI
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.8'
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-
-    - name: Build APK
-      run: |
-        # Command to build APK using buildozer or any other tool you're using
-        buildozer android debug
-
-    - name: Upload APK
-      uses: actions/upload-artifact@v3
-      with:
-        name: built-apk
-        path: path/to/your/apk-file.apk
+      -uses: actions/checkout@v2
+      
+      # used to cache dependencies with a timeout
+      -name: Get Date
+              id: get-date
+              run: |
+                echo "::set-output name=date::$(/bin/date -u "+%Y%m%d")"
+              shell: bash
+      
+      -name: Cache Buildozer global directory
+              uses: actions/cache@v2
+              with:
+                path: .buildozer_global
+                key: buildozer-global-${{ hashFiles('buildozer.spec') }} # Replace with your path
+      
+      -uses: actions/cache@v2
+              with:
+                path: .buildozer
+                key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
+      
+      -name: Build with Buildozer
+              uses: ArtemSBulgakov/buildozer-action@v1
+              id: buildozer
+              with:
+                command: buildozer android debug
+                buildozer_version: stable
+      
+      -name: Upload artifacts
+              uses: actions/upload-artifact@v2
+              with:
+                name: package
+                path: ${{ steps.buildozer.outputs.filename }}
