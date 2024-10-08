@@ -1,41 +1,26 @@
-name: CI
+name: CI - Android
+
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v3  # Checkout the repository
+      - uses: actions/checkout@v4
 
-      # Set up Java and Android SDK
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          java-version: '11'  # Use the required Java version
-
-      - name: Install Android SDK and NDK
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y wget unzip
-          # Install Android SDK command-line tools
-          wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip -O cmdline-tools.zip
-          mkdir -p $HOME/Android/Sdk/cmdline-tools
-          unzip cmdline-tools.zip -d $HOME/Android/Sdk/cmdline-tools
-          rm cmdline-tools.zip
-          # Set the environment variables
-          echo "export ANDROID_HOME=$HOME/Android/Sdk" >> $GITHUB_ENV
-          echo "export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools" >> $GITHUB_ENV
-          # Accept licenses and install platforms and build tools
-          yes | sdkmanager --licenses
-          sdkmanager "platforms;android-30" "build-tools;30.0.3" "ndk;21.4.7075529"  # Specify required versions
-
-      # Get Date and set environment variable
+      # Used to cache dependencies with a timeout
       - name: Get Date
         id: get-date
-        run: echo "DATE=$(date -u '+%Y%m%d')" >> $GITHUB_ENV
+        run: |
+          echo "date=$(date -u '+%Y%m%d')" >> $GITHUB_ENV
+        shell: bash
 
       - name: Cache Buildozer global directory
         uses: actions/cache@v3
@@ -43,21 +28,90 @@ jobs:
           path: .buildozer_global
           key: buildozer-global-${{ hashFiles('buildozer.spec') }}
 
-      - name: Cache Buildozer local directory
-        uses: actions/cache@v3
+      - uses: actions/cache@v3
         with:
           path: .buildozer
-          key: ${{ runner.os }}-${{ env.DATE }}-${{ hashFiles('buildozer.spec') }}
+          key: ${{ runner.os }}-${{ steps.get-date.outputs.date }}-${{ hashFiles('buildozer.spec') }}
 
-      - name: Build with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt-get install -y \
+            build-essential \
+            git \
+            ffmpeg \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev \
+            libsdl2-ttf-dev \
+            libportmidi-dev \
+            libswscale-dev \
+            libavformat-dev \
+            libavcodec-dev \
+            libunwind-dev \
+            zlib1g-dev
+          sudo apt-get install -y \
+            libsqlite3-dev \
+            sqlite3 \
+            bzip2 \
+            libbz2-dev \
+            zlib1g-dev \
+            openssl \
+            libgdbm-dev \
+            libgdbm-compat-dev \
+            liblzma-dev \
+            libreadline-dev \
+            uuid-dev \
+            libgstreamer1.0 \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good
+          sudo apt-get install -y \
+            zip \
+            unzip \
+            autoconf \
+            libtool \
+            pkg-config \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo5 \
+            cmake \
+            libffi-dev \
+            libssl-dev \
+            automake
+
+      # Set up Java 17 required by Gradle
+      - name: Setup Java 17 required by Gradle
+        uses: actions/setup-java@v4
         with:
-          command: buildozer android debug
-          buildozer_version: master
+          distribution: 'temurin'  # or 'zulu', 'liberica', etc.
+          java-version: '17'
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.8' #set your python version
+
+      # Install pip dependencies
+      - name: Install pip dependencies
+        run: |
+          pip install --upgrade pip
+          pip install buildozer cython==0.29.33
+
+      # Build with Buildozer
+      - name: Build with Buildozer
+        id: buildozer
+        run: |
+          yes | buildozer -v android debug
+        # yes | buildozer -v android release
+        # run this for generating aab (Android App Bundle) [Required by google play]
+
+      # Upload artifacts
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
           name: package
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: |
+            bin/*.apk
+            bin/*.aab
