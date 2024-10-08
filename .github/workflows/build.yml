@@ -1,3 +1,5 @@
+# Sample repository at https://github.com/Novfensec/SAMPLE-KIVYMD-APP
+
 name: CI - Android
 
 on:
@@ -91,18 +93,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.8' # Set your Python version
-
-      # Install Android SDK and NDK
-      - name: Install Android SDK and NDK
-        uses: android-actions/setup-android@v2
-        with:
-          api-level: 34  # Set your desired API level
-          ndk-version: 25.0.8775105  # Set NDK version to 25
-
-      # Build with Gradle
-      - name: Build with Gradle
-        run: ./gradlew build  # Adjust this
+          python-version: '3.8' #set your python version
 
       # Install pip dependencies
       - name: Install pip dependencies
@@ -116,7 +107,7 @@ jobs:
         run: |
           yes | buildozer -v android debug
         # yes | buildozer -v android release
-        # run this for generating aab (Android App Bundle) [Required by Google Play]
+        # run this for generating aab (Android App Bundle) [Required by google play]
 
       # Upload artifacts
       - name: Upload artifact
