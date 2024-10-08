@@ -89,11 +89,23 @@ jobs:
           distribution: 'temurin'  # or 'zulu', 'liberica', etc.
           java-version: '17'
 
+      - name: Set up Android NDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget unzip
+          # Download NDK r21e (change the version if needed)
+          wget https://dl.google.com/android/repository/android-ndk-r21e-linux-x86_64.zip
+          unzip android-ndk-r21e-linux-x86_64.zip -d $HOME/ndk
+          echo "NDK_HOME=$HOME/ndk/android-ndk-r21e" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$HOME/ndk/android-ndk-r21e" >> $GITHUB_ENV
+          echo "PATH=$PATH:$HOME/ndk/android-ndk-r21e" >> $GITHUB_ENV
+          echo "LEGACY_NDK=$HOME/ndk/android-ndk-r21e" >> $GITHUB_ENV
+
       # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.8' #set your python version
+          python-version: '3.11.9' #set your python version
 
       # Install pip dependencies
       - name: Install pip dependencies
