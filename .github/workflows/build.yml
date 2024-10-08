@@ -17,6 +17,8 @@ jobs:
       JAVA_VERSION: 11
       ANDROID_SDK_VERSION: "commandlinetools-linux-9477386_latest.zip"
       NDK_VERSION: "25.2.9519653"
+      ANDROID_HOME: "/usr/local/lib/android/sdk"
+      ANDROID_SDK_ROOT: "/usr/local/lib/android/sdk"
 
     steps:
     - name: Checkout code
@@ -41,30 +43,31 @@ jobs:
     - name: Install Android SDK
       run: |
         # Create the SDK directory
-        sudo mkdir -p /usr/local/lib/android/sdk
+        sudo mkdir -p $ANDROID_HOME
         # Download and extract the SDK command-line tools
-        cd /usr/local/lib/android/sdk
+        cd $ANDROID_HOME
         wget https://dl.google.com/android/repository/${{ env.ANDROID_SDK_VERSION }} -O commandlinetools.zip
         unzip commandlinetools.zip -d cmdline-tools
         mv cmdline-tools/cmdline-tools cmdline-tools/latest
         rm commandlinetools.zip
         # Accept licenses and install required SDK components
-        yes | /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --licenses
-        /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --install "platform-tools" "platforms;android-30" "build-tools;30.0.3"
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install \
+          "platform-tools" \
+          "platforms;android-30" \
+          "build-tools;30.0.3" \
+          "sources;android-30"
 
     - name: Install NDK
       run: |
-        /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --install "ndk;${{ env.NDK_VERSION }}"
+        $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --install "ndk;${{ env.NDK_VERSION }}"
 
-    - name: Install Additional SDK Tools (aidl)
-      run: |
-        /usr/local/lib/android/sdk/cmdline-tools/latest/bin/sdkmanager --install "platform-tools" "platforms;android-30" "build-tools;30.0.3" "sources;android-30" --sdk_root=/usr/local/lib/android/sdk
-    
     - name: Set environment variables
       run: |
-        echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
-        echo "ANDROID_NDK_HOME=/usr/local/lib/android/sdk/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
-        echo "PATH=$PATH:/usr/local/lib/android/sdk/cmdline-tools/latest/bin:/usr/local/lib/android/sdk/platform-tools:/usr/local/lib/android/sdk/emulator" >> $GITHUB_ENV
+        echo "ANDROID_HOME=${{ env.ANDROID_HOME }}" >> $GITHUB_ENV
+        echo "ANDROID_SDK_ROOT=${{ env.ANDROID_HOME }}" >> $GITHUB_ENV
+        echo "ANDROID_NDK_HOME=${{ env.ANDROID_HOME }}/ndk/${{ env.NDK_VERSION }}" >> $GITHUB_ENV
+        echo "PATH=$PATH:${{ env.ANDROID_HOME }}/cmdline-tools/latest/bin:${{ env.ANDROID_HOME }}/platform-tools:${{ env.ANDROID_HOME }}/emulator" >> $GITHUB_ENV
 
     - name: Build Android APK
       run: |
