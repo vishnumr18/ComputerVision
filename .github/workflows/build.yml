@@ -60,8 +60,8 @@ jobs:
         unzip commandlinetools.zip -d cmdline-tools
         mv cmdline-tools/cmdline-tools cmdline-tools/latest
         
-        # Accept all licenses
-        yes | sdkmanager --licenses
+        # Accept all licenses using sdkmanager
+        yes | sdkmanager --licenses || true
         
         # Install platform tools, build tools, and SDK platform
         sdkmanager "platform-tools" "platforms;android-33" "build-tools;33.0.0" "ndk;25.2.9519653"
